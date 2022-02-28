@@ -1,10 +1,13 @@
+import GameInput from "./GameInput";
 import GameObject from "./GameObject";
 
 class Hero extends GameObject {
 
     isWalking = false
-    fps = 5
+    fps = 10
+    frame = 0
     timers = []
+    subscriptions = []
 
     constructor(config) {
         super(config)
@@ -17,21 +20,24 @@ class Hero extends GameObject {
             RIGHT: 3 * config.width
         }
         this.current_direction = this.direction.BOTTOM
-        this.setInitialPosition()
-        this.initListeners()
 
         this.walk = this.walk.bind(this)
         this.setIdlePosition = this.setIdlePosition.bind(this)
 
+        const gameInput = new GameInput()
+        this.subscriptions.push(gameInput.getArrowDown$().subscribe(this.move.bind(this, this.direction.BOTTOM)))
+        this.subscriptions.push(gameInput.getArrowUp$().subscribe(this.move.bind(this, this.direction.TOP)))
+        this.subscriptions.push(gameInput.getArrowRight$().subscribe(this.move.bind(this, this.direction.RIGHT)))
+        this.subscriptions.push(gameInput.getArrowLeft$().subscribe(this.move.bind(this, this.direction.LEFT)))
     }
 
-    initListeners() {
-        document.addEventListener('keydown', this.keyDownListener.bind(this))
-        document.addEventListener('keyup', this.keyUpListener.bind(this))
+    releaseSubscriptions(){
+        this.subscriptions.forEach( sub => sub.unsubscribe())
     }
 
     setIdlePosition() {
-        this.draw(0)
+        this.frame = 0
+        super.emitDraw()
     }
 
     clearTimers() {
@@ -40,74 +46,17 @@ class Hero extends GameObject {
         }
         this.timers = []
     }
-    // KEY UP
-    keyUpListener(event) {
-        if (['w', 'ArrowUp', 's', 'ArrowDown', 'd', 'ArrowRight', 'a', 'ArrowLeft'].indexOf(event.key) !== -1) {
-            this.isWalking = false
 
-            if ((['w', 'ArrowUp'].indexOf(event.key) !== -1 && this.current_direction === this.direction.TOP) ||
-                (['s', 'ArrowDown'].indexOf(event.key) !== -1 && this.current_direction === this.direction.BOTTOM) ||
-                (['d', 'ArrowRight'].indexOf(event.key) !== -1 && this.current_direction === this.direction.RIGHT) ||
-                (['a', 'ArrowLeft'].indexOf(event.key) !== -1 && this.current_direction === this.direction.LEFT))
-                this.clearTimers()
-            this.setIdlePosition()
+    move(direction, event) {
+        if (event === "keydown" && (this.current_direction !== direction || this.timers.length === 0)) {
+            this.current_direction = direction
+            this.clearTimers()
+            this.walk()
+        } else if (event === "keyup" && this.current_direction === direction) {
+            this.clearTimers()
+            this.frame = 0
+            super.emitDraw()
         }
-    }
-    // KEY DOWN
-    keyDownListener(event) {
-        if (['w', 'ArrowUp'].indexOf(event.key) !== -1) {
-            if (!this.isWalking || this.current_direction !== this.direction.TOP) {
-                this.clearTimers()
-                this.isWalking = true
-                this.moveUp()
-                this.walk()
-            }
-        }
-        if (['s', 'ArrowDown'].indexOf(event.key) !== -1) {
-            if (!this.isWalking || this.current_direction !== this.direction.BOTTOM) {
-                this.clearTimers()
-                this.isWalking = true
-                this.moveDown()
-                this.walk()
-            }
-        }
-        if (['d', 'ArrowRight'].indexOf(event.key) !== -1) {
-            if (!this.isWalking || this.current_direction !== this.direction.RIGHT) {
-                this.clearTimers()
-                this.isWalking = true
-                this.moveRight()
-                this.walk()
-            }
-        }
-        if (['a', 'ArrowLeft'].indexOf(event.key) !== -1) {
-            if (!this.isWalking || this.current_direction !== this.direction.LEFT) {
-                this.clearTimers()
-                this.isWalking = true
-                this.moveLeft()
-                this.walk()
-            }
-        }
-    }
-
-    setInitialPosition() {
-        this.draw()
-    }
-
-    moveUp() {
-        this.current_direction = this.direction.TOP
-        this.draw()
-    }
-    moveDown() {
-        this.current_direction = this.direction.BOTTOM
-        this.draw()
-    }
-    moveRight() {
-        this.current_direction = this.direction.RIGHT
-        this.draw()
-    }
-    moveLeft() {
-        this.current_direction = this.direction.LEFT
-        this.draw()
     }
 
     walk(frame = 0) {
@@ -115,17 +64,16 @@ class Hero extends GameObject {
             frame++
             if (frame > 3)
                 frame = 0
-            this.draw(frame)
-
+            this.frame = frame
+            super.emitDraw(frame)
         }, 1000 / this.fps)
-
         this.timers.push(timer)
     }
 
-    draw(frame = 0) {
-        const centerX = (this.canvasWidth / 2) - (this.width / 2)
-        const centerY = (this.canvasHeight / 2) - (this.height / 2)
-        super.draw(this.current_direction, frame * this.height, centerX, centerY)
+    draw() {
+        const dx = this.canvasWidth / 2 - this.width / 2
+        const dy = this.canvasHeight / 2 - this.height / 2
+        super.draw(this.current_direction, this.frame * 48, dx, dy)
     }
 }
 
