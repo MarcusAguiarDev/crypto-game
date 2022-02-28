@@ -1,13 +1,11 @@
 import './style.scss'
 import { useEffect, useRef } from 'react'
-import GameObject from '../../services/GameObject'
 
 import HeroSrc from '../../assets/characters/george.png'
 import Room1Src from '../../assets/maps/room1.png'
 
 import Hero from '../../services/Hero'
 import Room from '../../services/Room'
-import GameInput from '../../services/GameInput'
 
 
 function Game() {
@@ -16,7 +14,6 @@ function Game() {
     let ctx = null
     let room = null
     let hero = null
-    const gameInput = new GameInput()
 
     useEffect(async () => {
         ctx = canvasEl.current.getContext('2d')
@@ -30,9 +27,9 @@ function Game() {
         draw()
 
         return () => { 
-            hero.releaseSubscriptions()
+            hero.release()
             heroSub.unsubscribe()
-            room.releaseSubscriptions()
+            room.release()
             roomSub.unsubscribe()
         }
     }, [canvasEl.current])

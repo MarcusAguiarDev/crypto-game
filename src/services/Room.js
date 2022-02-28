@@ -28,8 +28,9 @@ class Room extends GameObject {
         this.timers = []
     }
 
-    releaseSubscriptions(){
+    release(){
         this.subscriptions.forEach( sub => sub.unsubscribe())
+        this.clearTimers()
     }
 
     move(direction, event) {

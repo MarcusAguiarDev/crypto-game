@@ -31,8 +31,9 @@ class Hero extends GameObject {
         this.subscriptions.push(gameInput.getArrowLeft$().subscribe(this.move.bind(this, this.direction.LEFT)))
     }
 
-    releaseSubscriptions(){
+    release(){
         this.subscriptions.forEach( sub => sub.unsubscribe())
+        this.clearTimers()
     }
 
     setIdlePosition() {
